@@ -1,0 +1,47 @@
+---
+
+- name: Checking Failover state
+  gather_facts: no
+  hosts: FMC
+  connection: local
+
+  vars:
+    FMC_IP: 192.168.255.220
+  tasks:
+
+  - name: POST
+    uri:
+      url: "https://{{FMC_IP}}/api/fmc_platform/v1/auth/generatetoken"
+      method: POST
+      user: "api"
+      password: "1234567890"
+      validate_certs: no
+      force_basic_auth: yes
+      status_code: 204
+    register: token
+
+  - debug: 
+      msg: |
+              {{ token.x_auth_access_token }}
+
+  - name: get token
+    set_fact:
+      acc_token: "{{token.x_auth_access_token}}"
+      domain_uuid: "{{token.domain_uuid}}"
+
+  - name: Get_Access_Policy
+    uri:
+      url: "https://{{FMC_IP}}/api/fmc_config/v1/domain/{{domain_uuid}}/devicehapairs/ftddevicehapairs?expanded=true"
+      method: GET
+      headers:
+        "x-auth-access-token": "{{acc_token}}"
+        Connection: keep-alive
+      validate_certs: no
+      status_code: 200
+      body_format: json
+    register: devicepairs
+    
+  - debug:
+      msg: |
+              {{ devicepairs }}
+
