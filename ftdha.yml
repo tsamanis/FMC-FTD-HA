@@ -44,14 +44,21 @@
   - name: get METADATA structure           
     set_fact:
       devicepairs_meta: "{{devicepairs_json | json_query('items[].metadata')}}"      
+  - name: get FTD-HA name 
+    set_fact:
+      devicepairs_name: "{{devicepairs.json | json_query('items[].name')}}"      
+  - name: get Primary  Status
+    set_fact:
+      PStatus: "{{ devicepairs_meta[0].primaryStatus.currentStatus }}"     
+
+  - name: get Secondary Status
+    set_fact:
+      SStatus: "{{ devicepairs_meta[0].secondaryStatus.currentStatus }}"     
+
   - debug:
       msg: |    
-              {{devicepairs_meta}}
-  - name: get Primary Status
-    set_fact:
-       PStatus: "{{devicepairs_meta|json_query(jmesquery) }}" 
-
-
-# - debug:
-#     msg: |    
-#             {{PStatus}}
+              {{SStatus}}
+  - debug:
+      msg: |
+              " DeviceHA: {{devicepairs_name}} Primary Status is {{PStatus}} , Secondary Status is {{SStatus}}"
+               
