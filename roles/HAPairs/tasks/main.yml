@@ -1,0 +1,13 @@
+---
+
+  - name: Get Device HA pairs
+    uri:
+      url: "https://{{FMC_IP}}/api/fmc_config/v1/domain/{{domain_uuid}}/devicehapairs/ftddevicehapairs?expanded=true"
+      method: GET
+      headers:
+        "x-auth-access-token": "{{acc_token}}"
+        Connection: keep-alive
+      validate_certs: no
+      status_code: 200
+      body_format: json
+    register: devicepairs

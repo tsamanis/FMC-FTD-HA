@@ -1,0 +1,16 @@
+---
+  - name: Generate Token
+    uri:
+      url: "https://{{FMC_IP}}/api/fmc_platform/v1/auth/generatetoken"
+      method: POST
+#     user: "api"
+      user: "{{ FMC_username }}"
+#     password: "1234567890"
+      password: "{{ FMC_pass }}"
+      validate_certs: no
+      return_content: no
+      force_basic_auth: yes
+      status_code: 204
+
+    register: token
+

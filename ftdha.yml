@@ -1,24 +1,21 @@
 ---
 
-- name: Checking Failover state
+- name: Checking FTDv Failover state
   gather_facts: no
   hosts: FMC
   connection: local
 
   vars:
     FMC_IP: 192.168.255.220
+    FTDv1: 86929a22-543d-11ec-a4c0-e26057195b3c
+    FTDv2: 89e07bd6-543d-11ec-9aa4-df09791ea19a
+    jmesquery: 'metadata.primaryStatus'
+
   tasks:
 
-  - name: POST
-    uri:
-      url: "https://{{FMC_IP}}/api/fmc_platform/v1/auth/generatetoken"
-      method: POST
-      user: "api"
-      password: "1234567890"
-      validate_certs: no
-      force_basic_auth: yes
-      status_code: 204
-    register: token
+  - name: Authenticate with FMCv
+    include_role:
+      name:  auth    
 
   - debug: 
       msg: |
@@ -29,19 +26,32 @@
       acc_token: "{{token.x_auth_access_token}}"
       domain_uuid: "{{token.domain_uuid}}"
 
-  - name: Get_Access_Policy
-    uri:
-      url: "https://{{FMC_IP}}/api/fmc_config/v1/domain/{{domain_uuid}}/devicehapairs/ftddevicehapairs?expanded=true"
-      method: GET
-      headers:
-        "x-auth-access-token": "{{acc_token}}"
-        Connection: keep-alive
-      validate_certs: no
-      status_code: 200
-      body_format: json
-    register: devicepairs
+  - name: Get Device HA pairs 
+    include_role:
+      name:  HAPairs
     
   - debug:
       msg: |
               {{ devicepairs }}
+  - name: get JSON structure           
+    set_fact:
+      devicepairs_json: "{{ devicepairs.json }}"      
 
+  - debug:
+      msg: |    
+              {{devicepairs_json}}
+
+  - name: get METADATA structure           
+    set_fact:
+      devicepairs_meta: "{{devicepairs_json | json_query('items[].metadata')}}"      
+  - debug:
+      msg: |    
+              {{devicepairs_meta}}
+  - name: get Primary Status
+    set_fact:
+       PStatus: "{{devicepairs_meta|json_query(jmesquery) }}" 
+
+
+# - debug:
+#     msg: |    
+#             {{PStatus}}
