@@ -9,7 +9,7 @@
     FMC_IP: 192.168.255.220
     FTDv1: 86929a22-543d-11ec-a4c0-e26057195b3c
     FTDv2: 89e07bd6-543d-11ec-9aa4-df09791ea19a
-    jmesquery: 'metadata.primaryStatus'
+    slack_token: TL48R5E3D/B02PYCBTXB4/uoKsOeQGCks2WsQ4FeHmORGI
 
   tasks:
 
@@ -30,35 +30,38 @@
     include_role:
       name:  HAPairs
     
-  - debug:
-      msg: |
-              {{ devicepairs }}
-  - name: get JSON structure           
-    set_fact:
-      devicepairs_json: "{{ devicepairs.json }}"      
+  - name: Touch Previous state file 
+    shell:  touch previous.log
+    delegate_to:  localhost
 
-  - debug:
-      msg: |    
-              {{devicepairs_json}}
+  - name: Removing current state           
+    shell:  rm current.log
+    delegate_to:  localhost               
 
-  - name: get METADATA structure           
-    set_fact:
-      devicepairs_meta: "{{devicepairs_json | json_query('items[].metadata')}}"      
-  - name: get FTD-HA name 
-    set_fact:
-      devicepairs_name: "{{devicepairs.json | json_query('items[].name')}}"      
-  - name: get Primary  Status
-    set_fact:
-      PStatus: "{{ devicepairs_meta[0].primaryStatus.currentStatus }}"     
+  - name: Touch current state file 
+    shell:  touch current.log
+    delegate_to:  localhost
+########### LOOP ##########
+  - name: Loop inside JSON-Items
+    lineinfile:
+      path: current.log
+      line: "HA Pair: '{{item.name}}' Primary FTD Status: {{item.metadata.primaryStatus.currentStatus}} , Secondary FTD Status: {{item.metadata.secondaryStatus.currentStatus}}"
+    with_items: "{{ devicepairs.json | json_query('items[]') }}"     
 
-  - name: get Secondary Status
-    set_fact:
-      SStatus: "{{ devicepairs_meta[0].secondaryStatus.currentStatus }}"     
+  - name: DIFF STATES
+    shell: diff current.log previous.log 
+    delegate_to:  localhost               
+    register: to_slack
+    failed_when: "to_slack.rc > 1"
 
-  - debug:
-      msg: |    
-              {{SStatus}}
-  - debug:
-      msg: |
-              " DeviceHA: {{devicepairs_name}} Primary Status is {{PStatus}} , Secondary Status is {{SStatus}}"
-               
+  - name: SLACK           
+    slack:
+     token: "{{ slack_token }}"
+     msg: "{{to_slack.stdout}}" 
+    delegate_to:  localhost               
+    when: to_slack.rc!=0
+
+  - name: Copying current state to previous state for next run
+    shell:  cp current.log previous.log
+    delegate_to:  localhost               
+    run_once: true

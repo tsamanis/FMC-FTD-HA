@@ -1,1 +1,5 @@
 .vault_pass
+backup_ftdha.yml
+.gitignore
+previous.log
+current.log
