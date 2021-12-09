@@ -3,3 +3,4 @@ backup_ftdha.yml
 .gitignore
 previous.log
 current.log
+.vault_pass

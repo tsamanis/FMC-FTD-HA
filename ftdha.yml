@@ -7,9 +7,11 @@
 
   vars:
     FMC_IP: 192.168.255.220
-    FTDv1: 86929a22-543d-11ec-a4c0-e26057195b3c
-    FTDv2: 89e07bd6-543d-11ec-9aa4-df09791ea19a
     slack_token: TL48R5E3D/B02PYCBTXB4/uoKsOeQGCks2WsQ4FeHmORGI
+  environment:
+    http_proxy: http://proxy.esl.cisco.com:8080
+    https_proxy: http://proxy.esl.cisco.com:8080
+    no_proxy: 192.168.255.220
 
   tasks:
 
@@ -29,18 +31,27 @@
   - name: Get Device HA pairs 
     include_role:
       name:  HAPairs
+
+  - name: Touch previous.log
+    ansible.builtin.file:
+      path: previous.log
+      state: touch
+      mode: u=rw,g=rw,o=rw
     
-  - name: Touch Previous state file 
-    shell:  touch previous.log
-    delegate_to:  localhost
+# - name: Touch Previous state file 
+#   shell:  touch previous.log
+#   delegate_to:  localhost
 
-  - name: Removing current state           
-    shell:  rm current.log
-    delegate_to:  localhost               
+  - name: Remove current g
+    ansible.builtin.file:
+      path: current.log
+      state: absent
 
-  - name: Touch current state file 
-    shell:  touch current.log
-    delegate_to:  localhost
+  - name: Touch previous.log
+    ansible.builtin.file:
+      path: current.log
+      state: touch
+      mode: u=rw,g=rw,o=rw
 ########### LOOP ##########
   - name: Loop inside JSON-Items
     lineinfile:
